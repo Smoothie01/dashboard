@@ -8,7 +8,7 @@
         </main>
         <footer>
             <div class="container">
-                <h4 style="text-align: center">Made by Autodata</h4>
+                <h4 style="text-align: center">Made by "Стажер"</h4>
             </div>
         </footer>
     </div>
