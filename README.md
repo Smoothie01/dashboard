@@ -1,5 +1,7 @@
 # dashboard
 
+Мой проект для визуализаций аналитики разных сайтов
+
 ## Project setup
 ```
 npm install
