@@ -1,14 +1,14 @@
 <template>
     <a-row :gutter="[8,8]">
         <a-col :span="16">
-            <a-card style="height: 350px" title="Цели дня">
+            <a-card :loading='loading' style="height: 350px" title="Цели дня">
                 <a-row :gutter="[8,8]">
                     <a-col span="24">
                         <a-tooltip title="Общий прогресс">
                             <a-progress
                                     status="active"
                                     :stroke-color="{'0%': '#108ee9','100%': '#87d068',}"
-                                    :percent="75"
+                                    :percent="progressBarMain"
                             />
                         </a-tooltip>
                     </a-col>
@@ -26,7 +26,7 @@
             </a-card>
         </a-col>
         <a-col :span="8">
-            <a-card style="height: 350px" title="Заявки">
+            <a-card :loading='loading' style="height: 350px" title="Заявки">
                 <div class="card__inner">
                     <a-statistic title="Заявки на Carfast" :value="requestCarfast" style="margin-right: 50px"/>
                     <a-statistic title="Заявки на Kolesa" :value="requestKolesa" style="margin-right: 50px"/>
@@ -42,12 +42,12 @@
 
                         </template>
                     </a-statistic>
-                    <a-statistic title="Публикаций сейчас" :value="15" style="margin-right: 50px;width: 260px"/>
+                    <a-statistic title="Заявки на Carfast (за день)" :value="todayRequestCarfast" style="margin-right: 50px;width: 260px"/>
                 </div>
             </a-card>
         </a-col>
         <a-col :span="8">
-            <a-card style="height: 440px" title="Ставки">
+            <a-card :loading='loading' style="height: 440px" title="Ставки">
                 <a-statistic title="Сделано ставок (за все время)"
                              :value="getAllBets"
                              style="margin-right: 50px"
@@ -56,7 +56,6 @@
                              :value="getTodayBets"
                              style="margin-right: 50px"
                 />
-                <p>"Возможно будет график(вчера,позавчера)"</p>
                 <!--<a-statistic
                         title="Total:"
                         :value="getLastTotal"
@@ -73,7 +72,7 @@
             </a-card>
         </a-col>
         <a-col :span="16">
-            <a-card style="height: 440px" title="Посещений">
+            <a-card :loading='loading' style="height: 440px" title="Посещений">
                 <a-statistic title="Посещений (за все время)" :value="2000"
                              style="margin-right: 50px"/>
                 <a-statistic title="Сейчас на сайте " :value="2000" style="margin-right: 50px"/>
@@ -81,7 +80,7 @@
             </a-card>
         </a-col>
         <a-col :span="8">
-            <a-card title="Модерация">
+            <a-card :loading='loading' title="Модерация">
                 <div class="card__inner">
                     <a-statistic title="Заявок на модерацию в день" :value="getTodayAuctions" style="margin-right: 50px"/>
                     <a-statistic title="Заявок на модерацию за все время" :value="getTotalAuctions" style="margin-right: 50px"/>
@@ -113,10 +112,12 @@
         components: {VisitChart},
         data() {
             return {
-                requestCarfast: 5,
-                requestKolesa: 500,
+                requestCarfast: 0,
+                requestKolesa: 0,
+                todayRequestCarfast:0,
                 progress: true,
-                visitUsers: 158,
+                loading:true,
+                visitUsers: 0,
                 total: 0,
                 auction:{
                     todayAuctions:0,
@@ -125,11 +126,12 @@
                     totalModPassed:0
                 },
                 arrow: '',
+                progressBarMain:0,
                 progressBar: [
-                    {id: 1, title: 'Посещений', percent: 50, maxData: 1000, currentData: 500, strokeColor: '#118fe8'},
-                    {id: 2, title: 'Заявок', percent: 60, maxData: 60, currentData: 35, strokeColor: '#3ba6ba'},
-                    {id: 3, title: 'Подняли ставку', percent: 40, maxData: 90, currentData: 85, strokeColor: '#55b4a0'},
-                    {id: 4, title: 'Публикаций', percent: 75, maxData: 170, currentData: 100, strokeColor: '#87d069'},
+                    {id: 1, title: 'Посещений', percent: 0, maxData: 1000, currentData: 0, strokeColor: '#118fe8'},
+                    {id: 2, title: 'Заявок', percent: 0, maxData: 50, currentData: 0, strokeColor: '#3ba6ba'},
+                    {id: 3, title: 'Подняли ставку', percent: 0, maxData: 50, currentData: 0, strokeColor: '#55b4a0'},
+                    {id: 4, title: 'Модерация', percent: 0, maxData: 50, currentData: 0, strokeColor: '#87d069'},
                 ],
                 bets:{
                     todayBets:0,
@@ -189,14 +191,27 @@
             },
             getTotalModPassed(){
                 return this.auction.totalModPassed
-            }
+            },
+
         },
         methods: {
+            setDataToProgress(){
+                this.progressBar[1].currentData = this.todayRequestCarfast
+                this.progressBar[2].currentData = this.getTodayBets
+                this.progressBar[3].currentData = this.getTodayModPassed
+                let percentMain = 0
+                this.progressBar.forEach(element => {
+                    element.percent = (element.currentData/ element.maxData)*100
+                    percentMain += (element.percent/4)
+                })
+                this.progressBarMain = percentMain
+            },
             async getData(){
                 try {
-                    const response = await axios.get('https://auctionbacktest.fastbot.pro/auction-statistics/dashboard_statistics')
+                    const response = await axios.get('https://autolombardbot.fastbot.pro/auction-statistics/dashboard_statistics')
                     this.requestCarfast = response.data.carfast_market;
                     this.requestKolesa = response.data.kolesa_market;
+                    this.todayRequestCarfast = response.data.today_carfast_auctions;
                     this.total = response.data.carfast_market_procent;
                     this.bets.todayBets = response.data.today_bets;
                     this.bets.allBets = response.data.total_bet_num;
@@ -204,7 +219,8 @@
                     this.auction.totalAuctions = response.data.total_carfast_auctions;
                     this.auction.todayModPassed = response.data.today_mod_passed;
                     this.auction.totalModPassed = response.data.total_mod_passed;
-                    console.log(response.data)
+                    this.loading = false
+                    await this.setDataToProgress()
                 }catch (e) {
                     console.log(e)
                 }
@@ -218,33 +234,17 @@
                 console.log(this.progress)
                 console.log(this.total[this.total.length - 2] + ' ' + this.total[this.total.length - 1])
             },
-            interval() {
-                setInterval(() => {
-                    if (this.requestCarfast < 10) {
-                        this.requestCarfast += 1
-                    } else {
-                        this.requestCarfast = 0
-                        this.visitUsers = 100
-                    }
-                    this.time.yesterday = this.visitUsers
-                    this.visitUsers += 5
-                    this.time.today = this.visitUsers
-                    // console.log(this.getDataChart, 90)
-                    this.dataCollection.datasets[0].data = this.getDataChart
-                    //console.log(this.dataCollection.datasets[0].data)
-                    // this.dataCollection.datasets[0].data = this.getDataChart
-                    this.$set(this.getDataChart, 0, this.time.yesterday)
-                    this.$set(this.getDataChart, 1, this.time.today)
-                    // console.log(this.getDataChart)
-                    this.setTotal()
-                    this.checkProgress()
-                }, 3000)
+            async interval() {
+                 setInterval(async() => {
+                     console.log('2')
+                   await this.getData()
+                }, 60000)
             }
 
         },
         async mounted() {
-            // this.interval()
             await this.getData()
+            await this.interval()
         }
 
     }
